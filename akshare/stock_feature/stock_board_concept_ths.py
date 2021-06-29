@@ -86,7 +86,7 @@ def _stock_board_concept_code_ths() -> pd.DataFrame:
     return temp_map
 
 
-def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念") -> pd.DataFrame:
+def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=None) -> pd.DataFrame:
     """
     同花顺-板块-概念板块-成份股
     http://q.10jqka.com.cn/gn/detail/code/301558/
@@ -113,14 +113,17 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念") -> pd.DataF
     except IndexError as e:
         page_num = 1
     big_df = pd.DataFrame()
-    for page in tqdm(range(1, page_num+1)):
+    for page in tqdm(range(1, page_num + 1)):
         v_code = js_code.call('v')
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
             'Cookie': f'v={v_code}'
         }
         url = f'http://q.10jqka.com.cn/gn/detail/field/264648/order/desc/page/{page}/ajax/1/code/{symbol}'
-        r = requests.get(url, headers=headers)
+        if proxies is not None:
+            r = requests.get(url, headers=headers, proxies=proxies)
+        else:
+            r = requests.get(url, headers=headers)
         temp_df = pd.read_html(r.text)[0]
         big_df = big_df.append(temp_df, ignore_index=True)
     big_df.rename({"涨跌幅(%)": "涨跌幅",
@@ -151,7 +154,8 @@ def stock_board_concept_info_ths(symbol: str = "阿里巴巴概念") -> pd.DataF
     r = requests.get(url, headers=headers)
     soup = BeautifulSoup(r.text, 'lxml')
     name_list = [item.text for item in soup.find('div', attrs={'class': 'board-infos'}).find_all('dt')]
-    value_list = [item.text.strip().replace('\n', '/') for item in soup.find('div', attrs={'class': 'board-infos'}).find_all('dd')]
+    value_list = [item.text.strip().replace('\n', '/') for item in
+                  soup.find('div', attrs={'class': 'board-infos'}).find_all('dd')]
     temp_df = pd.DataFrame([name_list, value_list]).T
     temp_df.columns = ['项目', "值"]
     return temp_df
@@ -176,7 +180,7 @@ def stock_board_concept_index_ths(symbol: str = "安防") -> pd.DataFrame:
     symbol_code = soup.find('div', attrs={'class': 'board-hq'}).find('span').text
     big_df = pd.DataFrame()
     current_year = datetime.now().year
-    for year in tqdm(range(2000, current_year+1)):
+    for year in tqdm(range(2000, current_year + 1)):
         url = f'http://d.10jqka.com.cn/v4/line/bk_{symbol_code}/01/{year}.js'
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36',
