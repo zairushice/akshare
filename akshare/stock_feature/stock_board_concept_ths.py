@@ -46,7 +46,7 @@ def _get_file_content_ths(file_name: str = "ase.min.js") -> str:
     return file_data
 
 
-def stock_board_concept_name_ths() -> pd.DataFrame:
+def stock_board_concept_name_ths(proxies=None) -> pd.DataFrame:
     """
     同花顺-板块-概念板块-概念
     http://q.10jqka.com.cn/gn/detail/code/301558/
@@ -58,6 +58,8 @@ def stock_board_concept_name_ths() -> pd.DataFrame:
     }
     url = 'http://q.10jqka.com.cn/gn/'
     r = requests.get(url, headers=headers)
+    if r.status_code != 200:
+        r = requests.get(url, headers=headers, proxies=proxies)
     soup = BeautifulSoup(r.text, "lxml")
     html_list = soup.find('div', attrs={'class': 'boxShadow'}).find_all('a', attrs={'target': '_blank'})
     name_list = [item.text for item in html_list]
@@ -107,6 +109,8 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=Non
     }
     url = f'http://q.10jqka.com.cn/gn/detail/field/264648/order/desc/page/1/ajax/1/code/{symbol}'
     r = requests.get(url, headers=headers)
+    if r.status_code != 200:
+        r = requests.get(url, headers=headers, proxies=proxies)
     soup = BeautifulSoup(r.text, "lxml")
     try:
         page_num = int(soup.find_all('a', attrs={'class': 'changePage'})[-1]['page'])
@@ -120,10 +124,9 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=Non
             'Cookie': f'v={v_code}'
         }
         url = f'http://q.10jqka.com.cn/gn/detail/field/264648/order/desc/page/{page}/ajax/1/code/{symbol}'
-        if proxies is not None:
+        r = requests.get(url, headers=headers)
+        if r.status_code != 200:
             r = requests.get(url, headers=headers, proxies=proxies)
-        else:
-            r = requests.get(url, headers=headers)
         temp_df = pd.read_html(r.text)[0]
         big_df = big_df.append(temp_df, ignore_index=True)
     big_df.rename({"涨跌幅(%)": "涨跌幅",
