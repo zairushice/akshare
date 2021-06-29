@@ -6,6 +6,7 @@ Desc: 同花顺-板块-概念板块
 http://q.10jqka.com.cn/gn/detail/code/301558/
 """
 import os
+import random
 from datetime import datetime
 
 import demjson
@@ -46,7 +47,7 @@ def _get_file_content_ths(file_name: str = "ase.min.js") -> str:
     return file_data
 
 
-def stock_board_concept_name_ths(proxies=None) -> pd.DataFrame:
+def stock_board_concept_name_ths(proxy_pool=None) -> pd.DataFrame:
     """
     同花顺-板块-概念板块-概念
     http://q.10jqka.com.cn/gn/detail/code/301558/
@@ -59,7 +60,14 @@ def stock_board_concept_name_ths(proxies=None) -> pd.DataFrame:
     url = 'http://q.10jqka.com.cn/gn/'
     r = requests.get(url, headers=headers)
     if r.status_code != 200:
-        r = requests.get(url, headers=headers, proxies=proxies)
+        for proxies in proxy_pool:
+            try:
+                r = requests.get(url, headers=headers, proxies={"http": proxies}, timeout=5)
+                if r.status_code == 200:
+                    break
+            except Exception:
+                print("切换ip:{}".format(proxies))
+                continue
     soup = BeautifulSoup(r.text, "lxml")
     html_list = soup.find('div', attrs={'class': 'boxShadow'}).find_all('a', attrs={'target': '_blank'})
     name_list = [item.text for item in html_list]
@@ -88,7 +96,7 @@ def _stock_board_concept_code_ths() -> pd.DataFrame:
     return temp_map
 
 
-def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=None) -> pd.DataFrame:
+def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxy_pool=None) -> pd.DataFrame:
     """
     同花顺-板块-概念板块-成份股
     http://q.10jqka.com.cn/gn/detail/code/301558/
@@ -97,7 +105,7 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=Non
     :return: 成份股
     :rtype: pandas.DataFrame
     """
-    stock_board_ths_map_df = stock_board_concept_name_ths()
+    stock_board_ths_map_df = stock_board_concept_name_ths(proxy_pool=proxy_pool)
     symbol = stock_board_ths_map_df[stock_board_ths_map_df['name'] == symbol]['url'].values[0].split('/')[-2]
     js_code = py_mini_racer.MiniRacer()
     js_content = _get_file_content_ths("ths.js")
@@ -110,7 +118,14 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=Non
     url = f'http://q.10jqka.com.cn/gn/detail/field/264648/order/desc/page/1/ajax/1/code/{symbol}'
     r = requests.get(url, headers=headers)
     if r.status_code != 200:
-        r = requests.get(url, headers=headers, proxies=proxies)
+        for proxies in proxy_pool:
+            try:
+                r = requests.get(url, headers=headers, proxies={"http": proxies}, timeout=5)
+                if r.status_code == 200:
+                    break
+            except Exception:
+                print("切换ip:{}".format(proxies))
+                continue
     soup = BeautifulSoup(r.text, "lxml")
     try:
         page_num = int(soup.find_all('a', attrs={'class': 'changePage'})[-1]['page'])
@@ -126,7 +141,14 @@ def stock_board_concept_cons_ths(symbol: str = "阿里巴巴概念", proxies=Non
         url = f'http://q.10jqka.com.cn/gn/detail/field/264648/order/desc/page/{page}/ajax/1/code/{symbol}'
         r = requests.get(url, headers=headers)
         if r.status_code != 200:
-            r = requests.get(url, headers=headers, proxies=proxies)
+            for proxies in proxy_pool:
+                try:
+                    r = requests.get(url, headers=headers, proxies={"http": proxies})
+                    if r.status_code == 200:
+                        break
+                except Exception:
+                    print("切换ip:{}".format(proxies))
+                    continue
         temp_df = pd.read_html(r.text)[0]
         big_df = big_df.append(temp_df, ignore_index=True)
     big_df.rename({"涨跌幅(%)": "涨跌幅",
